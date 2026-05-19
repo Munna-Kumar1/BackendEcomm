@@ -13,25 +13,36 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Product {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private  Long id;
+    private Long id;
+
     private String name;
+
+    @Column(length = 1000)
     private String description;
+
     private Double price;
+
     private String category;
+
     private String imageUrl;
-    private Boolean isActive=true;
+
+    private Boolean isActive;
+
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
 
     @PrePersist
-    public void prePersist(){
-        createdAt=LocalDateTime.now();
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.isActive = true;
     }
 
     @PreUpdate
-    public void preUpdate(){
-        updatedAt=LocalDateTime.now();
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

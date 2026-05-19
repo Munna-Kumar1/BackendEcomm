@@ -1,5 +1,6 @@
 package com.prasadfencing.backendecom.product.service.impl;
 
+import com.prasadfencing.backendecom.exception.custom.ResourceNotFoundException;
 import com.prasadfencing.backendecom.product.dto.ProductRequestDTO;
 import com.prasadfencing.backendecom.product.dto.ProductResponseDTO;
 import com.prasadfencing.backendecom.product.entity.Product;
@@ -9,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,16 +17,16 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository repository;
 
-    private ProductResponseDTO mapToDTO(Product product){
+    private ProductResponseDTO map(Product p) {
         return ProductResponseDTO.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .description(product.getDescription())
-                .price(product.getPrice())
-                .category(product.getCategory())
-                .imageUrl(product.getImageUrl())
-                .isActive(product.getIsActive())
-                .createdAt(product.getCreatedAt())
+                .id(p.getId())
+                .name(p.getName())
+                .description(p.getDescription())
+                .price(p.getPrice())
+                .category(p.getCategory())
+                .imageUrl(p.getImageUrl())
+                .isActive(p.getIsActive())
+                .createdAt(p.getCreatedAt())
                 .build();
     }
 
@@ -41,48 +41,59 @@ public class ProductServiceImpl implements ProductService {
                 .imageUrl(dto.getImageUrl())
                 .isActive(true)
                 .build();
-        return mapToDTO(repository.save(product));
+
+        return map(repository.save(product));
     }
 
     @Override
     public ProductResponseDTO getProductById(Long id) {
+
         Product product = repository.findById(id)
-                .orElseThrow(()->new RuntimeException("Product not found"));
-        return mapToDTO(product);
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Product not found"));
+
+        return map(product);
     }
 
     @Override
     public List<ProductResponseDTO> getAllProducts() {
         return repository.findAll()
                 .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+                .map(this::map)
+                .toList();
     }
 
     @Override
     public ProductResponseDTO updateProduct(Long id, ProductRequestDTO dto) {
 
         Product product = repository.findById(id)
-                .orElseThrow(()->new RuntimeException("Product not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Product not found"));
 
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
         product.setCategory(dto.getCategory());
         product.setImageUrl(dto.getImageUrl());
-        return mapToDTO(repository.save(product));
+
+        return map(repository.save(product));
     }
 
     @Override
     public void deleteProduct(Long id) {
-        repository.deleteById(id);
+
+        Product product = repository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Product not found"));
+
+        repository.delete(product);
     }
 
     @Override
     public List<ProductResponseDTO> searchByName(String name) {
         return repository.findByNameContainingIgnoreCase(name)
                 .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+                .map(this::map)
+                .toList();
     }
 }
