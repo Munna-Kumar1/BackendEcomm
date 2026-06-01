@@ -18,7 +18,7 @@ public class CartController {
 
     private final CartService cartService;
 
-    // ADD TO CART
+    // ADD
     @PostMapping("/add")
     public String addToCart(@RequestBody AddToCartRequest request) {
         return cartService.addToCart(request);
@@ -30,16 +30,16 @@ public class CartController {
         return cartService.getMyCart();
     }
 
-    // UPDATE QUANTITY
-    @PutMapping("/{cartId}")
-    public String updateQuantity(@PathVariable Long cartId,
+    // UPDATE
+    @PutMapping("/item/{cartItemId}")
+    public String updateQuantity(@PathVariable Long cartItemId,
                                  @RequestBody Integer quantity) {
-        return cartService.updateQuantity(cartId, quantity);
+        return cartService.updateQuantity(cartItemId, quantity);
     }
 
-    // REMOVE ITEM
-    @DeleteMapping("/{cartId}")
-    public String removeItem(@PathVariable Long cartId) {
-        return cartService.removeItem(cartId);
+    // REMOVE
+    @DeleteMapping("/item/{cartItemId}")
+    public String removeItem(@PathVariable Long cartItemId) {
+        return cartService.removeItem(cartItemId);
     }
 }

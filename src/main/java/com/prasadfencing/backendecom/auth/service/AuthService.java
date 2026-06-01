@@ -22,7 +22,9 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;   // ✅ FIX: was missing
-    private final OtpGenerator otpGenerator;   // ✅ FIX: use existing utility
+    private final OtpGenerator otpGenerator;
+    private final TokenBlacklistService blacklistService;
+
 
     // ================= REGISTER =================
     public String register(RegisterRequest request) {
@@ -157,14 +159,21 @@ public class AuthService {
     }
 
     // ================= LOGOUT =================
-    public String logout(String email) {
+    public String logout(String email, String token) {
 
+        // 1. AUTH REPO (clear refresh token)
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setRefreshToken(null);
         user.setRefreshTokenExpiry(null);
         userRepository.save(user);
+
+        // 2. EXTRACT EXPIRY FROM JWT
+        LocalDateTime expiry = jwtService.extractExpiration(token);
+
+        // 3. BLACKLIST ACCESS TOKEN
+        blacklistService.blacklist(token, expiry);
 
         return "Logged out successfully";
     }

@@ -4,6 +4,8 @@ import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 @Service
@@ -58,5 +60,19 @@ public class JwtService {
                 .setSigningKey(secret)
                 .parseClaimsJws(token)
                 .getBody();
+    }
+    public Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .setSigningKey(secret)
+                .parseClaimsJws(token)
+                .getBody();
+    }
+    public LocalDateTime extractExpiration(String token) {
+
+        Date expiry = extractAllClaims(token).getExpiration();
+
+        return expiry.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
     }
 }

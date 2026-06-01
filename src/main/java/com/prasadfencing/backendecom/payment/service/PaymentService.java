@@ -35,6 +35,7 @@ public class PaymentService {
     private final OrderService orderService;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final InvoiceService invoiceService;
 
     @Value("${razorpay.key}")
     private String key;
@@ -100,6 +101,7 @@ public class PaymentService {
             throw new RuntimeException("Invalid signature");
         }
 
+        // ✅ PAYMENT SUCCESS
         payment.setRazorpayPaymentId(request.getRazorpayPaymentId());
         payment.setStatus(PaymentStatus.SUCCESS);
 
@@ -108,6 +110,9 @@ public class PaymentService {
 
         orderRepository.save(order);
         paymentRepository.save(payment);
+
+        // 🔥 NEW STEP: AUTO INVOICE GENERATION
+        invoiceService.generateInvoiceFromOrder(order.getId());
     }
 
     public List<Payment> getAllPayments() {

@@ -2,6 +2,7 @@ package com.prasadfencing.backendecom.auth.config;
 
 import com.prasadfencing.backendecom.auth.service.CustomUserDetailsService;
 import com.prasadfencing.backendecom.auth.service.JwtService;
+import com.prasadfencing.backendecom.auth.service.TokenBlacklistService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -36,25 +38,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String token = header.substring(7);
+
+            // 🔥 STEP 1: CHECK BLACKLIST (IMPORTANT)
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token is blacklisted (logged out)");
+                return;
+            }
+
             String email = jwtService.extractEmail(token);
 
+            // 🔥 STEP 2: VALIDATION
             if (email != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null &&
                     jwtService.isTokenValid(token)) {
 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(email);
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
 
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                auth.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
 
         } catch (Exception e) {
-            System.out.println("JWT Error: " + e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid JWT Token");
+            return;
         }
 
         filterChain.doFilter(request, response);

@@ -7,6 +7,7 @@ import com.prasadfencing.backendecom.address.repository.AddressRepository;
 import com.prasadfencing.backendecom.auth.entity.User;
 import com.prasadfencing.backendecom.auth.repository.UserRepository;
 import com.prasadfencing.backendecom.delivery.repository.ServiceablePincodeRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -109,6 +110,7 @@ public class AddressService {
     }
 
     // Update Address
+    @Transactional
     public AddressResponse updateAddress(Long id, AddressRequest request) {
 
         User user = getCurrentUser();
@@ -116,12 +118,25 @@ public class AddressService {
         Address address = addressRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Address not found"));
 
-        // 🔐 OWNERSHIP CHECK (VERY IMPORTANT)
+        // ownership check
         if (!address.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Not allowed to update this address");
         }
 
-        // 📝 UPDATE FIELDS
+        // if this address should become default
+        if (request.isDefaultAddress()) {
+
+            // make all addresses false
+            addressRepository.resetDefaultByUserId(user.getId());
+
+            // make current address true
+            address.setDefaultAddress(true);
+
+        } else {
+            address.setDefaultAddress(false);
+        }
+
+        // update fields
         address.setFullName(request.getFullName());
         address.setPhone(request.getPhone());
         address.setStreet(request.getStreet());
@@ -129,12 +144,6 @@ public class AddressService {
         address.setState(request.getState());
         address.setPincode(request.getPincode());
         address.setCountry(request.getCountry());
-        address.setDefaultAddress(request.isDefaultAddress());
-
-        // 💡 OPTIONAL: handle default address logic
-        if (request.isDefaultAddress()) {
-            addressRepository.resetDefaultByUserId(user.getId());
-        }
 
         Address updated = addressRepository.save(address);
 

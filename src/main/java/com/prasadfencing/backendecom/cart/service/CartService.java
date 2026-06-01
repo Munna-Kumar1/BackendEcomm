@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CartService {
@@ -21,7 +22,7 @@ public class CartService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-    // GET USER
+    // ================= USER =================
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
@@ -31,7 +32,7 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // ADD TO CART
+    // ================= ADD TO CART =================
     public String addToCart(AddToCartRequest request) {
 
         User user = getCurrentUser();
@@ -40,7 +41,7 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         CartItem existing = cartRepository
-                .findByUserIdAndProductId(user.getId(), request.getProductId())
+                .findByUserIdAndProductId(user.getId(), product.getId())
                 .orElse(null);
 
         if (existing != null) {
@@ -60,7 +61,7 @@ public class CartService {
         return "Product added to cart";
     }
 
-    // GET MY CART
+    // ================= GET CART =================
     public List<CartResponse> getMyCart() {
 
         User user = getCurrentUser();
@@ -68,7 +69,7 @@ public class CartService {
         return cartRepository.findByUser(user)
                 .stream()
                 .map(item -> CartResponse.builder()
-                        .cartId(item.getId())
+                        .cartItemId(item.getId())
                         .productName(item.getProduct().getName())
                         .price(item.getProduct().getPrice())
                         .quantity(item.getQuantity())
@@ -78,15 +79,14 @@ public class CartService {
                 .toList();
     }
 
-    // UPDATE QUANTITY
-    public String updateQuantity(Long cartId, Integer quantity) {
+    // ================= UPDATE QUANTITY =================
+    public String updateQuantity(Long cartItemId, Integer quantity) {
 
         User user = getCurrentUser();
 
-        CartItem item = cartRepository.findById(cartId)
+        CartItem item = cartRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
 
-        // SECURITY CHECK
         if (!item.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Not allowed");
         }
@@ -102,21 +102,31 @@ public class CartService {
         return "Cart updated";
     }
 
-    // REMOVE ITEM
-    public String removeItem(Long cartId) {
+    // ================= REMOVE ITEM =================
+    public String removeItem(Long cartItemId) {
 
         User user = getCurrentUser();
 
-        CartItem item = cartRepository.findById(cartId)
+        CartItem item = cartRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
 
-        // SECURITY CHECK
         if (!item.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Not allowed");
         }
 
         cartRepository.delete(item);
 
+        List<CartItem> remaining = cartRepository.findByUser(user);
+
+        if (remaining.isEmpty()) {
+            return "Cart is empty";
+        }
+
         return "Item removed from cart";
+    }
+
+    // ================= OPTIONAL: CLEAR CART =================
+    public void clearCart(User user) {
+        cartRepository.deleteByUser(user);
     }
 }

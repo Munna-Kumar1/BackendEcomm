@@ -7,6 +7,7 @@ import com.prasadfencing.backendecom.auth.repository.UserRepository;
 import com.prasadfencing.backendecom.cart.entity.CartItem;
 import com.prasadfencing.backendecom.cart.repository.CartRepository;
 import com.prasadfencing.backendecom.delivery.repository.ServiceablePincodeRepository;
+import com.prasadfencing.backendecom.order.dto.OrderItemResponseDTO;
 import com.prasadfencing.backendecom.order.dto.OrderResponseDTO;
 import com.prasadfencing.backendecom.order.dto.PlaceOrderRequestDTO;
 import com.prasadfencing.backendecom.order.entity.Order;
@@ -119,6 +120,16 @@ public class OrderServiceImpl implements OrderService {
                 .orderDate(order.getOrderDate())
                 .totalAmount(order.getTotalAmount())
                 .addressId(order.getAddress().getId())
+                .items(
+                        order.getItems().stream()
+                                .map(item -> OrderItemResponseDTO.builder()
+                                        .productId(item.getProduct().getId())
+                                        .productName(item.getProduct().getName())
+                                        .quantity(item.getQuantity())
+                                        .price(item.getPrice())
+                                        .build())
+                                .toList()
+                )
                 .build();
     }
 }

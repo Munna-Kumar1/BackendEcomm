@@ -5,6 +5,6 @@ import java.util.UUID;
 public class InvoiceNumberGenerator {
 
     public static String generate() {
-        return "INV-" + UUID.randomUUID().toString().substring(0, 8);
+        return "INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }

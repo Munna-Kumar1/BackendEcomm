@@ -22,13 +22,11 @@ public class Invoice {
 
     private String invoiceNumber;
 
-    private String type; // B2C / B2B
+    private String type; // always ONLINE
 
     private Double totalAmount;
 
-    private String status; // GENERATED, PAID
-
-    private String gstNumber;
+    private String status; // GENERATED
 
     private LocalDateTime createdAt;
 

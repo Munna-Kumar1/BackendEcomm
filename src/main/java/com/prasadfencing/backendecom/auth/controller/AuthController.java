@@ -71,7 +71,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestParam String email) {
-        return ResponseEntity.ok(authService.logout(email));
+    public ResponseEntity<String> logout(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam String email
+    ) {
+
+        String token = authHeader.substring(7); // remove Bearer
+
+        return ResponseEntity.ok(authService.logout(email, token));
     }
 }
