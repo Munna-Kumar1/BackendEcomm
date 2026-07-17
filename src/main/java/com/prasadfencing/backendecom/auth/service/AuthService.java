@@ -21,7 +21,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;   // ✅ FIX: was missing
+    private final EmailService emailService;
     private final OtpGenerator otpGenerator;
     private final TokenBlacklistService blacklistService;
 
@@ -177,4 +177,54 @@ public class AuthService {
 
         return "Logged out successfully";
     }
+
+    public String forgotPassword(ForgotPasswordRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.isVerified()) {
+            throw new RuntimeException("Email not verified");
+        }
+
+        String otp = otpGenerator.generateOtp();
+
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+
+        userRepository.save(user);
+
+        emailService.sendOtp(user.getEmail(), otp);
+
+        return "OTP sent to email for password reset";
+    }
+    // =============== reset password =============
+    public String resetPassword(ResetPasswordRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // OTP check
+        if (user.getOtp() == null || !user.getOtp().equals(request.getOtp())) {
+            throw new RuntimeException("Invalid OTP");
+        }
+
+        // OTP expiry check
+        if (user.getOtpExpiry() == null ||
+                user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP expired");
+        }
+
+        // update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        // clear OTP after success
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+
+        userRepository.save(user);
+
+        return "Password changed successfully";
+    }
+
 }

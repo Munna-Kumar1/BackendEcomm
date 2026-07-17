@@ -3,8 +3,10 @@ package com.prasadfencing.backendecom.auth.config;
 import com.prasadfencing.backendecom.auth.service.CustomUserDetailsService;
 import com.prasadfencing.backendecom.auth.service.JwtService;
 import com.prasadfencing.backendecom.auth.service.TokenBlacklistService;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +31,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+
+        // ✅ PUBLIC ROUTES SKIP (IMPORTANT FIX)
+        if (path.startsWith("/api/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         if (header == null || !header.startsWith("Bearer ")) {
@@ -39,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = header.substring(7);
 
-            // 🔥 STEP 1: CHECK BLACKLIST (IMPORTANT)
+            // 🔥 CHECK BLACKLIST
             if (tokenBlacklistService.isBlacklisted(token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("Token is blacklisted (logged out)");
@@ -48,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String email = jwtService.extractEmail(token);
 
-            // 🔥 STEP 2: VALIDATION
+            // 🔥 VALIDATE TOKEN
             if (email != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null &&
                     jwtService.isTokenValid(token)) {

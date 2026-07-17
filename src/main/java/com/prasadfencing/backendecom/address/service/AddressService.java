@@ -149,4 +149,21 @@ public class AddressService {
 
         return map(updated);
     }
+    public String getPhoneByUserId(Long userId) {
+        // 1. Fetch all addresses for this user
+        List<com.prasadfencing.backendecom.address.entity.Address> addresses = addressRepository.findByUserId(userId);
+
+        // 2. If list is empty, return a placeholder
+        if (addresses == null || addresses.isEmpty()) {
+            return "+91 XXXXXXXXXX";
+        }
+
+        // 3. Try to find the default address first
+        return addresses.stream()
+                .filter(com.prasadfencing.backendecom.address.entity.Address::isDefaultAddress)
+                .map(com.prasadfencing.backendecom.address.entity.Address::getPhone)
+                .findFirst()
+                // 4. Fallback: If no default is set, return the phone number of the first address found
+                .orElse(addresses.get(0).getPhone());
+    }
 }

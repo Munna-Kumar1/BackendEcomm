@@ -35,4 +35,8 @@ public class PaymentController {
     public List<Payment> getAllPayments() {
         return paymentService.getAllPayments();
     }
+    @GetMapping("/key")
+    public String getKey() {
+        return paymentService.getKey();
+    }
 }

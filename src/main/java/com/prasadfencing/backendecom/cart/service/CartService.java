@@ -22,7 +22,7 @@ public class CartService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-    // ================= USER =================
+    // ================= GET USER =================
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
@@ -61,7 +61,7 @@ public class CartService {
         return "Product added to cart";
     }
 
-    // ================= GET CART =================
+    // ================= GET CART (FIXED WITH IMAGE) =================
     public List<CartResponse> getMyCart() {
 
         User user = getCurrentUser();
@@ -70,10 +70,12 @@ public class CartService {
                 .stream()
                 .map(item -> CartResponse.builder()
                         .cartItemId(item.getId())
+                        .productId(item.getProduct().getId()) // ✅ IMPORTANT
                         .productName(item.getProduct().getName())
                         .price(item.getProduct().getPrice())
                         .quantity(item.getQuantity())
                         .total(item.getProduct().getPrice() * item.getQuantity())
+                        .imageUrl(item.getProduct().getImageUrl()) // ✅ IMAGE FIXED
                         .build()
                 )
                 .toList();
@@ -116,16 +118,10 @@ public class CartService {
 
         cartRepository.delete(item);
 
-        List<CartItem> remaining = cartRepository.findByUser(user);
-
-        if (remaining.isEmpty()) {
-            return "Cart is empty";
-        }
-
         return "Item removed from cart";
     }
 
-    // ================= OPTIONAL: CLEAR CART =================
+    // ================= CLEAR CART =================
     public void clearCart(User user) {
         cartRepository.deleteByUser(user);
     }
